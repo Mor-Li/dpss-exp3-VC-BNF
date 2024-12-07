@@ -38,7 +38,8 @@ dataset/
 
 ```bash
 
-CUDA_VISIBLE_DEVICES=0 python preprocess.py --data_dir /path/to/dataset/bzn --save_dir /path/to/save_data/bzn/
+cd code/dpss-exp3-VC-BNF 
+CUDA_VISIBLE_DEVICES=0 python preprocess.py --data_dir ../../dataset/bzn --save_dir ../../dataset/prepared_data/bzn
 
 ```
 
@@ -62,27 +63,20 @@ bzn/
 └── train_meta.csv
 ```
 
-Tips: If you get 'Could not find a version for torch==1.9.0+cu111', run the following script to solve the problem. More details please refer to: https://jishuin.proginn.com/p/763bfbd5e54b.
-
-
-```bash
-
-pip3 install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
-
-```
 
 ### Train
 
 If you have GPU (one typical GPU is enough, nearly 1s/batch):
 ```bash
-CUDA_VISIBLE_DEVICES=0 python train_to_one.py --model_dir ./exps/model_dir_to_bzn --test_dir ./exps/test_dir_to_bzn --data_dir /path/to/save_data/bzn/
+
+CUDA_VISIBLE_DEVICES=0 python train_to_one.py \
+--model_dir ../../exps/model_dir_to_bzn \
+--test_dir ../../exps/test_dir_to_bzn \
+--data_di ../../dataset/prepared_data/bzn \
+> train_to_one.output 2>&1
+
 ```
 
-If you have no GPU (nearly 5s/batch):
-
-```bash
-python train_to_one.py --model_dir ./exps/model_dir_to_bzn --test_dir ./exps/test_dir_to_bzn --data_dir /path/to/save_data/bzn/
-```
 ### Inference
 
 ```bash
@@ -96,7 +90,10 @@ CUDA_VISIBLE_DEVICES=0 python inference_to_one.py --src_wav /path/to/source/xx.w
 
 ```bash
 # In any-to-many VC task, we use all the above 3 speakers as the target speaker set.
-CUDA_VISIBLE_DEVICES=0 python preprocess.py --data_dir /path/to/dataset/ --save_dir /path/to/save_data/exp3-data-all
+CUDA_VISIBLE_DEVICES=0 python preprocess.py \
+--data_dir ../../dataset \
+--save_dir ../../dataset/prepared_data/exp3-data-all
+
 ```
 
 Your extracted features will be organized as follows:

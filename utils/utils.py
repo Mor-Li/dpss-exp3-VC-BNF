@@ -45,7 +45,7 @@ def change_sample_rate(input_path, sample_rate, output_path):
 def reform_input_audio(source_wav_path, reform_wav_path,sr = 16000):
 
   change_sample_rate(source_wav_path, sr, reform_wav_path)
-  signal, _ = librosa.load(reform_wav_path, sr)
+  signal, _ = librosa.load(reform_wav_path, sr=sr)
   pad_length = 0 * 240  # pad zero frame in training
   pad_sig = np.pad(signal, (pad_length, pad_length))
   pad_sig = pad_sig / np.max(np.abs(pad_sig)) * 0.75

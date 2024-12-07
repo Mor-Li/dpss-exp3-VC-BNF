@@ -150,12 +150,12 @@ def _mel_to_linear(mel_spectrogram):
 def _build_mel_basis():
     n_fft = (audio_hp.num_freq - 1) * 2
     return librosa.filters.mel(
-        audio_hp.sample_rate,
+        sr=audio_hp.sample_rate,
         n_fft=n_fft,
         n_mels=audio_hp.num_mels,
         fmin=audio_hp.min_mel_freq,
-        fmax=audio_hp.max_mel_freq)
-
+        fmax=audio_hp.max_mel_freq
+    )
 
 def _amp_to_db(x):
     return 20 * np.log10(np.maximum(1e-5, x))
