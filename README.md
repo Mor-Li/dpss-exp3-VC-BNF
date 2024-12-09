@@ -144,6 +144,13 @@ CUDA_VISIBLE_DEVICES=0 python train_to_many.py \
 ```bash
 # Here for inference, we use 'mst-male' as the target speaker. you can change the tgt_spk argument to any of the above 3 speakers. 
 CUDA_VISIBLE_DEVICES=0 python inference_to_many.py \
+--src_wav ../../dataset/bzn/000001.wav \
+--ckpt ../../exps/model_dir_to_many/bnf-vc-to-many-59.pt \
+--tgt_spk bzn/mst-female/mst-male \
+--save_dir ../../exps/test_dir_bzn_to_many
+
+
+CUDA_VISIBLE_DEVICES=0 python inference_to_many.py \
 --src_wav ../../dataset/limo/000001.m4a \
 --ckpt ../../exps/model_dir_to_many/bnf-vc-to-many-59.pt \
 --tgt_spk bzn/mst-female/mst-male \
