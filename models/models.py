@@ -148,59 +148,51 @@ class BLSTMToManyConversionModel(nn.Module):
 
     def forward(self, x, spk_inds):
         """
-        Feel free to include input features you need to extract speaker embedding,
-        and much possibly you need to modify the corresponding part in the training script if you do so.
-        :param x: [time, batch, features]
-        :param spk_inds: indices of speakers, [batch, ]
-        :return: [time, batch, features]
+        :param x: 输入特征，形状为 [time_steps, batch_size, in_channels]
+        :param spk_inds: 目标说话人索引，形状为 [batch_size]
+        :return: 预测的梅尔频谱，形状为 [time_steps, batch_size, out_channels]
         """
-        # look up speaker embedding
-        spk_embds = self.spk_embed_net(spk_inds)
-        spk_embds = spk_embds.repeat(x.shape[0], 1, 1)
-
-        # add speaker embd to the inputs
-        blstm1_inputs = _  # give your implementation here
-        # pass to the 1st BLSTM layer
+        # 查找说话人嵌入
+        spk_embds = self.spk_embed_net(spk_inds)  # [batch_size, embd_dim]
+        # 将说话人嵌入扩展到时间步长度
+        spk_embds_time = spk_embds.unsqueeze(0).expand(x.shape[0], -1, -1)  # [time_steps, batch_size, embd_dim]
+        # 对嵌入进行线性变换
+        spk_embd_proj1 = self.emb_proj1(spk_embds_time)  # [time_steps, batch_size, in_channels]
+        spk_embd_proj2 = self.emb_proj2(spk_embds_time)  # [time_steps, batch_size, lstm_hidden * 2]
+        # 将嵌入添加到输入特征
+        blstm1_inputs = x + spk_embd_proj1  # [time_steps, batch_size, in_channels]
+        # 通过第一个 BLSTM 层
         blstm1_outs, _ = self.blstm1(blstm1_inputs)
-        # add speaker embd to the outputs of 1st lstm
-        blstm2_inputs = _  # give your implementation here
-        # pass to the 2nd BLSTM layer
+        # 将嵌入添加到第一个 BLSTM 层的输出
+        blstm2_inputs = blstm1_outs + spk_embd_proj2  # [time_steps, batch_size, lstm_hidden * 2]
+        # 通过第二个 BLSTM 层
         blstm2_outs, _ = self.blstm2(blstm2_inputs)
-        # project to the output dimension
+        # 投影到输出维度
         outputs = self.out_projection(blstm2_outs)
         return outputs
 
 
 class SPKEmbedding(nn.Module):
     """
-    Speaker embedding module.
-    You are required to implement this module as asked in the assignment.
-    You can implement the basic ideas provided in the assignment.
-    Besides, you can also add more components, e.g., to generate speaker embedding
-    according to the speaker's acoustic features such as Mel-spectrogram.
+    说话人嵌入模块。
     """
-
     def __init__(self, num_spk, embd_dim):
         """
-        Feel free to add parameters to define your own components
-        :param num_spk: number of target speakers
-        :param embd_dim: output speaker embedding dimension
+        初始化说话人嵌入模块。
+        :param num_spk: 目标说话人的数量
+        :param embd_dim: 说话人嵌入向量的维度
         """
         super(SPKEmbedding, self).__init__()
-        # define your module components below
-        # e.g. self.embedding_table = ...
-        # from zxt
-
+        # 定义可学习的嵌入表
+        self.embedding_table = nn.Embedding(num_spk, embd_dim)
+        
     def forward(self, spk_inds):
         """
-        Feel free to use other input features to extract your speaker embedding and
-        modify the corresponding parts in the BLSTMToManyConversionModel Module.
-        :param spk_inds: speaker indices, should be of type torch.Longtensor
-        :return: speaker embedding, should be of shape [batch, out_channels]
+        根据说话人索引返回对应的嵌入向量。
+        :param spk_inds: 说话人索引，torch.LongTensor 类型，形状为 [batch_size]
+        :return: 说话人嵌入，形状为 [batch_size, embd_dim]
         """
-        # define your inference process below
-        # e.g. return self.embedding_table(spk_inds)
-        pass
+        return self.embedding_table(spk_inds)
 
 
 class CustomToOneConversionModel(nn.Module):
