@@ -72,7 +72,8 @@ def main():
     model = BLSTMResConversionModel(
         in_channels=hps.Audio.bn_dim + 2,
         out_channels=hps.Audio.num_mels,
-        lstm_hidden=hps.BLSTMResConversionModel.lstm_hidden,
+        # we inherit the lstm_hidden from the BLSTMConversion model to BLSTMResConversionModel
+        lstm_hidden=hps.BLSTMConversionModel.lstm_hidden,
     )
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=hps.TrainToOne.learning_rate)
