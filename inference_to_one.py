@@ -49,7 +49,7 @@ def main():
                                  out_channels=hps.Audio.num_mels,
                                  lstm_hidden=hps.BLSTMConversionModel.lstm_hidden)
     device = torch.device('cpu')
-    model.load_state_dict(torch.load(args.ckpt, map_location=device), weights_only=True)
+    model.load_state_dict(torch.load(args.ckpt, map_location=device, weights_only=True))
     model.eval()
     predicted_mels = model(torch.tensor(vc_inputs).to(torch.float32))
     predicted_mels = np.squeeze(predicted_mels.detach().numpy(), axis=1)
