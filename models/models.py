@@ -75,44 +75,43 @@ class BLSTMResConversionModel(nn.Module):
     def forward(self, x):
         """
         :param x: [time, batch, features]
-        :return: [time, batch, features]
+        :return: 最终输出 [time, batch, features]
         """
-        # pass to the 1st BLSTM layer
+        # 通过第一个 BLSTM 层
         blstm1_out, _ = self.blstm1(x)
-        # pass to the 2nd BLSTM layer
-        blstm2_out, _ = self.blstm2(blstm1_out)
-        # project to the output dimension
+        # 通过第二个 BLSTM 层
+        blstm2_out, _= self.blstm2(blstm1_out)
+        # 投影到输出维度
         initial_outs = self.out_projection(blstm2_out)
+        # 计算残差
         residual = self.resnet(initial_outs)
-        final_outs = _  # define the final outputs here
+        # 将残差与初始输出相加，得到最终输出
+        final_outs = initial_outs + residual
         return final_outs
 
 
 class ResidualNet(nn.Module):
     """
-    Residual network used to generate residual information
-    for predicted Mel-spectrogram. It's widely accepted that
-    this can help generate much more accurate Mel-spectrogram.
+    用于生成预测梅尔频谱残差的残差网络。
     """
-
     def __init__(self, channels, other_params):
-        """
-        :param channels: equal to dimension of the Mel-spectrogram
-        :param other_params: parameters for the definition of your residual net
-        """
         super(ResidualNet, self).__init__()
         self.channels = channels
-        # define your module components below
-        # e.g. self.dense_layer = nn.Linear(in_features=channels, out_features=channels)
-
+        # 定义两层全连接层和激活函数
+        self.fc1 = nn.Linear(in_features=channels, out_features=channels)
+        self.activation = nn.ReLU()
+        self.fc2 = nn.Linear(in_features=channels, out_features=channels)
+        
     def forward(self, x):
         """
-        :param x: input mel-spectrogram
-        :return: output improved mel-spectrogram
+        计算残差。
+        :param x: 输入的初始梅尔频谱 [time, batch, channels]
+        :return: 残差 [time, batch, channels]
         """
-        # define your inference process below
-        pass
-
+        out = self.fc1(x)
+        out = self.activation(out)
+        out = self.fc2(out)
+        return out  # 返回残差
 
 class BLSTMToManyConversionModel(nn.Module):
     """
