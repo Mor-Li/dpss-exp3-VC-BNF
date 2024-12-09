@@ -49,7 +49,7 @@ class BLSTMResConversionModel(nn.Module):
     define your ResidualNet Module to be used in this Module.
     """
 
-    def __init__(self, in_channels, out_channels, lstm_hidden, other_params):
+    def __init__(self, in_channels, out_channels, lstm_hidden, other_params=None):
         """
         :param in_channels: input feature dimension,
                             usually (bnf_dim + f0s_dim) when use bnfs and f0s as inputs
