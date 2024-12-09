@@ -80,7 +80,10 @@ CUDA_VISIBLE_DEVICES=0 python train_to_one.py \
 ### Inference
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python inference_to_one.py --src_wav /path/to/source/xx.wav --ckpt ../exps/model_dir_to_bzn/bnf-vc-to-one-49.pt --save_dir ./test_dir/
+CUDA_VISIBLE_DEVICES=0 python inference_to_one.py \
+--src_wav ../../dataset/bzn/000001.wav \
+--ckpt ../../exps/model_dir_to_bzn/bnf-vc-to-one-59.pt \
+--save_dir ../../exps/test_dir_to_bzn
 ```
 
 

@@ -63,7 +63,7 @@ def find_endpoint(wav, threshold_db=-40.0, min_silence_sec=0.8):
 
 def _griffin_lim(S):
     angles = np.exp(2j * np.pi * np.random.rand(*S.shape))
-    S_complex = np.abs(S).astype(np.complex)
+    S_complex = np.abs(S).astype(complex)
     y = _istft(S_complex * angles)
     for i in range(audio_hp.griffin_lim_iters):
         angles = np.exp(1j * np.angle(_stft(y)))

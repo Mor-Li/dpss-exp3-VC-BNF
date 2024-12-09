@@ -12,10 +12,10 @@ import torch
 def load_checkpoint(model: torch.nn.Module, path: str) -> dict:
     if torch.cuda.is_available():
         logging.info('Checkpoint: loading from checkpoint %s for GPU' % path)
-        checkpoint = torch.load(path, weights_only=False)
+        checkpoint = torch.load(path, weights_only=True)
     else:
         logging.info('Checkpoint: loading from checkpoint %s for CPU' % path)
-        checkpoint = torch.load(path, weights_only=False, map_location='cpu')
+        checkpoint = torch.load(path, weights_only=True, map_location='cpu')
     model.load_state_dict(checkpoint)
     info_path = re.sub('.pt$', '.yaml', path)
     configs = {}
