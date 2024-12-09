@@ -132,20 +132,24 @@ exp3-data-all/
 
 If you have GPU (one typical GPU is enough, nearly 1s/batch):
 ```bash
-CUDA_VISIBLE_DEVICES=0 python train_to_many.py --model_dir ./exps/model_dir_to_many --test_dir ./exps/test_dir_to_many --data_dir /path/to/save_data/exp3-data-all
-```
+CUDA_VISIBLE_DEVICES=0 python train_to_many.py \
+--model_dir ../../exps/model_dir_to_many \
+--test_dir ../../exps/test_dir_to_many \
+--data_dir ../../dataset/prepared_data/exp3-data-all \
+> train_to_many.output 2>&1 
 
-If you have no GPU (nearly 5s/batch):
-
-```bash
-python train_to_many.py --model_dir ./exps/model_dir_to_many --test_dir ./exps/test_dir_to_many --data_dir /path/to/save_data/exp3-data-all
 ```
 ### Inference
 
 ```bash
 # Here for inference, we use 'mst-male' as the target speaker. you can change the tgt_spk argument to any of the above 3 speakers. 
-CUDA_VISIBLE_DEVICES=0 python inference_to_many.py --src_wav /path/to/source/*.wav --tgt_spk bzn/mst-female/mst-male --ckpt ./model_dir/bnf-vc-to-many-49.pt --save_dir ./test_dir/
+CUDA_VISIBLE_DEVICES=0 python inference_to_many.py \
+--src_wav ../../dataset/limo/000001.m4a \
+--ckpt ../../exps/model_dir_to_many/bnf-vc-to-many-59.pt \
+--tgt_spk bzn/mst-female/mst-male \
+--save_dir ../../exps/test_dir_limo_to_many
 ```
+
 
 ## Assignment requirements
 This project is a vanilla voice conversion system based on BNFs. 
