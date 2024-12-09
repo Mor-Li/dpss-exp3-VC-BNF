@@ -2,6 +2,7 @@
 # Author: di.wu@mobvoi.com (DI WU)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 """Decoder definition."""
+
 from typing import Tuple, List, Optional
 
 import torch
@@ -11,7 +12,7 @@ from models.wenet.transformer.attention import MultiHeadedAttention
 from models.wenet.transformer.decoder_layer import DecoderLayer
 from models.wenet.transformer.embedding import PositionalEncoding
 from models.wenet.transformer.positionwise_feed_forward import PositionwiseFeedForward
-from models.wenet.utils.mask import (subsequent_mask, make_pad_mask)
+from models.wenet.utils.mask import subsequent_mask, make_pad_mask
 
 
 class TransformerDecoder(torch.nn.Module):
@@ -34,6 +35,7 @@ class TransformerDecoder(torch.nn.Module):
             True: x -> x + linear(concat(x, att(x)))
             False: x -> x + att(x)
     """
+
     def __init__(
         self,
         vocab_size: int,
@@ -70,16 +72,18 @@ class TransformerDecoder(torch.nn.Module):
         self.decoders = torch.nn.ModuleList([
             DecoderLayer(
                 attention_dim,
-                MultiHeadedAttention(attention_heads, attention_dim,
-                                     self_attention_dropout_rate),
-                MultiHeadedAttention(attention_heads, attention_dim,
-                                     src_attention_dropout_rate),
-                PositionwiseFeedForward(attention_dim, linear_units,
-                                        dropout_rate),
+                MultiHeadedAttention(
+                    attention_heads, attention_dim, self_attention_dropout_rate
+                ),
+                MultiHeadedAttention(
+                    attention_heads, attention_dim, src_attention_dropout_rate
+                ),
+                PositionwiseFeedForward(attention_dim, linear_units, dropout_rate),
                 dropout_rate,
                 normalize_before,
                 concat_after,
-            ) for _ in range(self.num_blocks)
+            )
+            for _ in range(self.num_blocks)
         ])
 
     def forward(
@@ -113,14 +117,12 @@ class TransformerDecoder(torch.nn.Module):
         # tgt_mask: (B, 1, L)
         tgt_mask = (~make_pad_mask(ys_in_lens).unsqueeze(1)).to(tgt.device)
         # m: (1, L, L)
-        m = subsequent_mask(tgt_mask.size(-1),
-                            device=tgt_mask.device).unsqueeze(0)
+        m = subsequent_mask(tgt_mask.size(-1), device=tgt_mask.device).unsqueeze(0)
         # tgt_mask: (B, L, L)
         tgt_mask = tgt_mask & m
         x, _ = self.embed(tgt)
         for layer in self.decoders:
-            x, tgt_mask, memory, memory_mask = layer(x, tgt_mask, memory,
-                                                     memory_mask)
+            x, tgt_mask, memory, memory_mask = layer(x, tgt_mask, memory, memory_mask)
         if self.normalize_before:
             x = self.after_norm(x)
         if self.use_output_layer:
@@ -157,11 +159,9 @@ class TransformerDecoder(torch.nn.Module):
                 c = None
             else:
                 c = cache[i]
-            x, tgt_mask, memory, memory_mask = decoder(x,
-                                                       tgt_mask,
-                                                       memory,
-                                                       memory_mask,
-                                                       cache=c)
+            x, tgt_mask, memory, memory_mask = decoder(
+                x, tgt_mask, memory, memory_mask, cache=c
+            )
             new_cache.append(x)
         if self.normalize_before:
             y = self.after_norm(x[:, -1])
@@ -193,6 +193,7 @@ class BiTransformerDecoder(torch.nn.Module):
             True: x -> x + linear(concat(x, att(x)))
             False: x -> x + att(x)
     """
+
     def __init__(
         self,
         vocab_size: int,
@@ -210,20 +211,39 @@ class BiTransformerDecoder(torch.nn.Module):
         normalize_before: bool = True,
         concat_after: bool = False,
     ):
-
         assert check_argument_types()
         super().__init__()
         self.left_decoder = TransformerDecoder(
-            vocab_size, encoder_output_size, attention_heads, linear_units,
-            num_blocks, dropout_rate, positional_dropout_rate,
-            self_attention_dropout_rate, src_attention_dropout_rate,
-            input_layer, use_output_layer, normalize_before, concat_after)
+            vocab_size,
+            encoder_output_size,
+            attention_heads,
+            linear_units,
+            num_blocks,
+            dropout_rate,
+            positional_dropout_rate,
+            self_attention_dropout_rate,
+            src_attention_dropout_rate,
+            input_layer,
+            use_output_layer,
+            normalize_before,
+            concat_after,
+        )
 
         self.right_decoder = TransformerDecoder(
-            vocab_size, encoder_output_size, attention_heads, linear_units,
-            r_num_blocks, dropout_rate, positional_dropout_rate,
-            self_attention_dropout_rate, src_attention_dropout_rate,
-            input_layer, use_output_layer, normalize_before, concat_after)
+            vocab_size,
+            encoder_output_size,
+            attention_heads,
+            linear_units,
+            r_num_blocks,
+            dropout_rate,
+            positional_dropout_rate,
+            self_attention_dropout_rate,
+            src_attention_dropout_rate,
+            input_layer,
+            use_output_layer,
+            normalize_before,
+            concat_after,
+        )
 
     def forward(
         self,
@@ -252,12 +272,12 @@ class BiTransformerDecoder(torch.nn.Module):
                     if use_output_layer is True,
                 olens: (batch, )
         """
-        l_x, _, olens = self.left_decoder(memory, memory_mask, ys_in_pad,
-                                          ys_in_lens)
+        l_x, _, olens = self.left_decoder(memory, memory_mask, ys_in_pad, ys_in_lens)
         r_x = torch.tensor(0.0)
         if reverse_weight > 0.0:
-            r_x, _, olens = self.right_decoder(memory, memory_mask, r_ys_in_pad,
-                                               ys_in_lens)
+            r_x, _, olens = self.right_decoder(
+                memory, memory_mask, r_ys_in_pad, ys_in_lens
+            )
         return l_x, r_x, olens
 
     def forward_one_step(
@@ -282,5 +302,6 @@ class BiTransformerDecoder(torch.nn.Module):
             y, cache: NN output value and cache per `self.decoders`.
             y.shape` is (batch, maxlen_out, token)
         """
-        return self.left_decoder.forward_one_step(memory, memory_mask, tgt,
-                                                  tgt_mask, cache)
+        return self.left_decoder.forward_one_step(
+            memory, memory_mask, tgt, tgt_mask, cache
+        )

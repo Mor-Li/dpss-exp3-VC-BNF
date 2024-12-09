@@ -41,11 +41,14 @@ class LabelSmoothingLoss(nn.Module):
             normalize loss by sequence length if True
             normalize loss by batch size if False
     """
-    def __init__(self,
-                 size: int,
-                 padding_idx: int,
-                 smoothing: float,
-                 normalize_length: bool = False):
+
+    def __init__(
+        self,
+        size: int,
+        padding_idx: int,
+        smoothing: float,
+        normalize_length: bool = False,
+    ):
         """Construct an LabelSmoothingLoss object."""
         super(LabelSmoothingLoss, self).__init__()
         self.criterion = nn.KLDivLoss(reduction="none")

@@ -31,6 +31,7 @@ class TransformerEncoderLayer(nn.Module):
             False: x -> x + att(x)
 
     """
+
     def __init__(
         self,
         size: int,
@@ -141,6 +142,7 @@ class ConformerEncoderLayer(nn.Module):
             True: x -> x + linear(concat(x, att(x)))
             False: x -> x + att(x)
     """
+
     def __init__(
         self,
         size: int,
@@ -166,10 +168,10 @@ class ConformerEncoderLayer(nn.Module):
         else:
             self.ff_scale = 1.0
         if self.conv_module is not None:
-            self.norm_conv = nn.LayerNorm(size,
-                                          eps=1e-12)  # for the CNN module
+            self.norm_conv = nn.LayerNorm(size, eps=1e-12)  # for the CNN module
             self.norm_final = nn.LayerNorm(
-                size, eps=1e-12)  # for the final output of the block
+                size, eps=1e-12
+            )  # for the final output of the block
         self.dropout = nn.Dropout(dropout_rate)
         self.size = size
         self.normalize_before = normalize_before
@@ -207,8 +209,7 @@ class ConformerEncoderLayer(nn.Module):
             residual = x
             if self.normalize_before:
                 x = self.norm_ff_macaron(x)
-            x = residual + self.ff_scale * self.dropout(
-                self.feed_forward_macaron(x))
+            x = residual + self.ff_scale * self.dropout(self.feed_forward_macaron(x))
             if not self.normalize_before:
                 x = self.norm_ff_macaron(x)
 

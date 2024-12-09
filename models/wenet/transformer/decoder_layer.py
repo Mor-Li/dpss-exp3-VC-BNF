@@ -4,6 +4,7 @@
 # Copyright 2019 Shigeki Karita
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 """Decoder self-attention layer definition."""
+
 from typing import Optional, Tuple
 
 import torch
@@ -30,6 +31,7 @@ class DecoderLayer(nn.Module):
             True: x -> x + linear(concat(x, att(x)))
             False: x -> x + att(x)
     """
+
     def __init__(
         self,
         size: int,
@@ -61,7 +63,7 @@ class DecoderLayer(nn.Module):
         tgt_mask: torch.Tensor,
         memory: torch.Tensor,
         memory_mask: torch.Tensor,
-        cache: Optional[torch.Tensor] = None
+        cache: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Compute decoded features.
 
@@ -103,11 +105,11 @@ class DecoderLayer(nn.Module):
 
         if self.concat_after:
             tgt_concat = torch.cat(
-                (tgt_q, self.self_attn(tgt_q, tgt, tgt, tgt_q_mask)), dim=-1)
+                (tgt_q, self.self_attn(tgt_q, tgt, tgt, tgt_q_mask)), dim=-1
+            )
             x = residual + self.concat_linear1(tgt_concat)
         else:
-            x = residual + self.dropout(
-                self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))
+            x = residual + self.dropout(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))
         if not self.normalize_before:
             x = self.norm1(x)
 
@@ -116,11 +118,11 @@ class DecoderLayer(nn.Module):
             x = self.norm2(x)
         if self.concat_after:
             x_concat = torch.cat(
-                (x, self.src_attn(x, memory, memory, memory_mask)), dim=-1)
+                (x, self.src_attn(x, memory, memory, memory_mask)), dim=-1
+            )
             x = residual + self.concat_linear2(x_concat)
         else:
-            x = residual + self.dropout(
-                self.src_attn(x, memory, memory, memory_mask))
+            x = residual + self.dropout(self.src_attn(x, memory, memory, memory_mask))
         if not self.normalize_before:
             x = self.norm2(x)
 

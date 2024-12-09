@@ -4,6 +4,7 @@
 import numpy as np
 import torch
 
+
 def insert_blank(label, blank_id=0):
     """Insert blank token between every two label token."""
     label = np.expand_dims(label, 1)
@@ -13,9 +14,8 @@ def insert_blank(label, blank_id=0):
     label = np.append(label, label[0])
     return label
 
-def forced_align(ctc_probs: torch.Tensor,
-                 y: torch.Tensor,
-                 blank_id=0) -> list:
+
+def forced_align(ctc_probs: torch.Tensor, y: torch.Tensor, blank_id=0) -> list:
     """ctc forced alignment.
 
     Args:
@@ -28,9 +28,9 @@ def forced_align(ctc_probs: torch.Tensor,
     y_insert_blank = insert_blank(y, blank_id)
 
     log_alpha = torch.zeros((ctc_probs.size(0), len(y_insert_blank)))
-    log_alpha = log_alpha - float('inf')  # log of zero
-    state_path = (torch.zeros(
-        (ctc_probs.size(0), len(y_insert_blank)), dtype=torch.int16) - 1
+    log_alpha = log_alpha - float("inf")  # log of zero
+    state_path = (
+        torch.zeros((ctc_probs.size(0), len(y_insert_blank)), dtype=torch.int16) - 1
     )  # state path
 
     # init start state
@@ -39,10 +39,15 @@ def forced_align(ctc_probs: torch.Tensor,
 
     for t in range(1, ctc_probs.size(0)):
         for s in range(len(y_insert_blank)):
-            if y_insert_blank[s] == blank_id or s < 2 or y_insert_blank[
-                    s] == y_insert_blank[s - 2]:
-                candidates = torch.tensor(
-                    [log_alpha[t - 1, s], log_alpha[t - 1, s - 1]])
+            if (
+                y_insert_blank[s] == blank_id
+                or s < 2
+                or y_insert_blank[s] == y_insert_blank[s - 2]
+            ):
+                candidates = torch.tensor([
+                    log_alpha[t - 1, s],
+                    log_alpha[t - 1, s - 1],
+                ])
                 prev_state = [s, s - 1]
             else:
                 candidates = torch.tensor([
@@ -58,7 +63,7 @@ def forced_align(ctc_probs: torch.Tensor,
 
     candidates = torch.tensor([
         log_alpha[-1, len(y_insert_blank) - 1],
-        log_alpha[-1, len(y_insert_blank) - 2]
+        log_alpha[-1, len(y_insert_blank) - 2],
     ])
     prev_state = [len(y_insert_blank) - 1, len(y_insert_blank) - 2]
     state_seq[-1] = prev_state[torch.argmax(candidates)]

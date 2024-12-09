@@ -33,17 +33,14 @@ from torch.utils.data import Dataset, DataLoader
 import models.wenet.dataset.kaldi_io as kaldi_io
 from models.wenet.dataset.wav_distortion import distort_wav_conf
 from models.wenet.utils.common import IGNORE_ID
+
 torchaudio.set_audio_backend("sox")
 
 
-def _spec_augmentation(x,
-                       warp_for_time=False,
-                       num_t_mask=2,
-                       num_f_mask=2,
-                       max_t=50,
-                       max_f=10,
-                       max_w=80):
-    """ Deep copy x and do spec augmentation then return it
+def _spec_augmentation(
+    x, warp_for_time=False, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10, max_w=80
+):
+    """Deep copy x and do spec augmentation then return it
 
     Args:
         x: input feature, T * F 2D
@@ -67,7 +64,8 @@ def _spec_augmentation(x,
 
         left = Image.fromarray(x[:center]).resize((max_freq, warped), BICUBIC)
         right = Image.fromarray(x[center:]).resize(
-            (max_freq, max_frames - warped), BICUBIC)
+            (max_freq, max_frames - warped), BICUBIC
+        )
         y = np.concatenate((left, right), 0)
     # time mask
     for i in range(num_t_mask):
@@ -85,7 +83,7 @@ def _spec_augmentation(x,
 
 
 def _spec_substitute(x, max_t=20, num_t_sub=3):
-    """ Deep copy x and do spec substitute then return it
+    """Deep copy x and do spec substitute then return it
 
     Args:
         x: input feature, T * F 2D
@@ -103,12 +101,12 @@ def _spec_substitute(x, max_t=20, num_t_sub=3):
         end = min(max_frames, start + length)
         # only substitute the earlier time chosen randomly for current time
         pos = random.randint(0, start)
-        y[start:end, :] = y[start - pos:end - pos, :]
+        y[start:end, :] = y[start - pos : end - pos, :]
     return y
 
 
 def _waveform_distortion(waveform, distortion_methods_conf):
-    """ Apply distortion on waveform
+    """Apply distortion on waveform
 
     This distortion will not change the length of the waveform.
 
@@ -124,21 +122,22 @@ def _waveform_distortion(waveform, distortion_methods_conf):
     r = random.uniform(0, 1)
     acc = 0.0
     for distortion_method in distortion_methods_conf:
-        method_rate = distortion_method['method_rate']
+        method_rate = distortion_method["method_rate"]
         acc += method_rate
         if r < acc:
-            distortion_type = distortion_method['name']
-            distortion_conf = distortion_method['params']
-            point_rate = distortion_method['point_rate']
-            return distort_wav_conf(waveform, distortion_type, distortion_conf,
-                                    point_rate)
+            distortion_type = distortion_method["name"]
+            distortion_conf = distortion_method["params"]
+            point_rate = distortion_method["point_rate"]
+            return distort_wav_conf(
+                waveform, distortion_type, distortion_conf, point_rate
+            )
     return waveform
 
 
 # add speed perturb when loading wav
 # return augmented, sr
 def _load_wav_with_speed(wav_file, speed):
-    """ Load the wave from file and apply speed perpturbation
+    """Load the wave from file and apply speed perpturbation
 
     Args:
         wav_file: input feature, T * F 2D
@@ -158,24 +157,25 @@ def _load_wav_with_speed(wav_file, speed):
         if ta_version < 80:
             # Note: deprecated in torchaudio>=0.8.0
             E = sox_effects.SoxEffectsChain()
-            E.append_effect_to_chain('speed', speed)
+            E.append_effect_to_chain("speed", speed)
             E.append_effect_to_chain("rate", si.rate)
             E.set_input_file(wav_file)
             wav, sr = E.sox_build_flow_effects()
         else:
             # Note: enable in torchaudio>=0.8.0
             wav, sr = sox_effects.apply_effects_file(
-                wav_file,
-                [['speed', str(speed)], ['rate', str(si.rate)]])
+                wav_file, [["speed", str(speed)], ["rate", str(si.rate)]]
+            )
 
         # sox will normalize the waveform, scale to [-32768, 32767]
         wav = wav * (1 << 15)
         return wav, sr
 
 
-def _extract_feature(batch, speed_perturb, wav_distortion_conf,
-                     feature_extraction_conf):
-    """ Extract acoustic fbank feature from origin waveform.
+def _extract_feature(
+    batch, speed_perturb, wav_distortion_conf, feature_extraction_conf
+):
+    """Extract acoustic fbank feature from origin waveform.
 
     Speed perturbation and wave amplitude distortion is optional.
 
@@ -191,9 +191,9 @@ def _extract_feature(batch, speed_perturb, wav_distortion_conf,
     keys = []
     feats = []
     lengths = []
-    wav_dither = wav_distortion_conf['wav_dither']
-    wav_distortion_rate = wav_distortion_conf['wav_distortion_rate']
-    distortion_methods_conf = wav_distortion_conf['distortion_methods']
+    wav_dither = wav_distortion_conf["wav_dither"]
+    wav_distortion_rate = wav_distortion_conf["wav_distortion_rate"]
+    distortion_methods_conf = wav_distortion_conf["distortion_methods"]
     if speed_perturb:
         speeds = [1.0, 1.1, 0.9]
         weights = [1, 1, 1]
@@ -210,7 +210,8 @@ def _extract_feature(batch, speed_perturb, wav_distortion_conf,
             if speed_perturb:
                 if len(value) == 3:
                     logging.error(
-                        "speed perturb does not support segmented wav.scp now")
+                        "speed perturb does not support segmented wav.scp now"
+                    )
                 assert len(value) == 1
                 waveform, sample_rate = _load_wav_with_speed(wav_path, speed)
             else:
@@ -222,7 +223,8 @@ def _extract_feature(batch, speed_perturb, wav_distortion_conf,
                     waveform, sample_rate = torchaudio.backend.sox_backend.load(
                         filepath=wav_path,
                         num_frames=end_frame - start_frame,
-                        offset=start_frame)
+                        offset=start_frame,
+                    )
                     waveform = waveform * (1 << 15)
                 else:
                     waveform, sample_rate = torchaudio.load_wav(wav_path)
@@ -230,24 +232,24 @@ def _extract_feature(batch, speed_perturb, wav_distortion_conf,
                 r = random.uniform(0, 1)
                 if r < wav_distortion_rate:
                     waveform = waveform.detach().numpy()
-                    waveform = _waveform_distortion(waveform,
-                                                    distortion_methods_conf)
+                    waveform = _waveform_distortion(waveform, distortion_methods_conf)
                     waveform = torch.from_numpy(waveform)
             mat = kaldi.fbank(
                 waveform,
-                num_mel_bins=feature_extraction_conf['mel_bins'],
-                frame_length=feature_extraction_conf['frame_length'],
-                frame_shift=feature_extraction_conf['frame_shift'],
+                num_mel_bins=feature_extraction_conf["mel_bins"],
+                frame_length=feature_extraction_conf["frame_length"],
+                frame_shift=feature_extraction_conf["frame_shift"],
                 dither=wav_dither,
                 energy_floor=0.0,
-                sample_frequency=sample_rate)
+                sample_frequency=sample_rate,
+            )
             mat = mat.detach().numpy()
             feats.append(mat)
             keys.append(x[0])
             lengths.append(mat.shape[0])
-        except (Exception) as e:
+        except Exception as e:
             print(e)
-            logging.warn('read utterance {} error'.format(x[0]))
+            logging.warn("read utterance {} error".format(x[0]))
             pass
     # Sort it because sorting is required in pack/pad operation
     order = np.argsort(lengths)[::-1]
@@ -260,7 +262,7 @@ def _extract_feature(batch, speed_perturb, wav_distortion_conf,
 
 
 def _load_feature(batch):
-    """ Load acoustic feature from files.
+    """Load acoustic feature from files.
 
     The features have been prepared in previous step, usualy by Kaldi.
 
@@ -279,7 +281,7 @@ def _load_feature(batch):
             feats.append(mat)
             keys.append(x[0])
             lengths.append(mat.shape[0])
-        except (Exception):
+        except Exception:
             # logging.warn('read utterance {} error'.format(x[0]))
             pass
     # Sort it because sorting is required in pack/pad operation
@@ -293,8 +295,8 @@ def _load_feature(batch):
 
 
 class CollateFunc(object):
-    """ Collate function for AudioDataset
-    """
+    """Collate function for AudioDataset"""
+
     def __init__(
         self,
         feature_dither=0.0,
@@ -324,11 +326,14 @@ class CollateFunc(object):
         self.spec_sub_conf = spec_sub_conf
 
     def __call__(self, batch):
-        assert (len(batch) == 1)
+        assert len(batch) == 1
         if self.raw_wav:
-            keys, xs, ys = _extract_feature(batch[0], self.speed_perturb,
-                                            self.wav_distortion_conf,
-                                            self.feature_extraction_conf)
+            keys, xs, ys = _extract_feature(
+                batch[0],
+                self.speed_perturb,
+                self.wav_distortion_conf,
+                self.feature_extraction_conf,
+            )
 
         else:
             keys, xs, ys = _load_feature(batch[0])
@@ -353,20 +358,22 @@ class CollateFunc(object):
 
         # padding
         xs_lengths = torch.from_numpy(
-            np.array([x.shape[0] for x in xs], dtype=np.int32))
+            np.array([x.shape[0] for x in xs], dtype=np.int32)
+        )
 
         # pad_sequence will FAIL in case xs is empty
         if len(xs) > 0:
-            xs_pad = pad_sequence([torch.from_numpy(x).float() for x in xs],
-                                  True, 0)
+            xs_pad = pad_sequence([torch.from_numpy(x).float() for x in xs], True, 0)
         else:
             xs_pad = torch.Tensor(xs)
         if train_flag:
             ys_lengths = torch.from_numpy(
-                np.array([y.shape[0] for y in ys], dtype=np.int32))
+                np.array([y.shape[0] for y in ys], dtype=np.int32)
+            )
             if len(ys) > 0:
-                ys_pad = pad_sequence([torch.from_numpy(y).int() for y in ys],
-                                      True, IGNORE_ID)
+                ys_pad = pad_sequence(
+                    [torch.from_numpy(y).int() for y in ys], True, IGNORE_ID
+                )
             else:
                 ys_pad = torch.Tensor(ys)
         else:
@@ -376,17 +383,19 @@ class CollateFunc(object):
 
 
 class AudioDataset(Dataset):
-    def __init__(self,
-                 data_file,
-                 max_length=10240,
-                 min_length=0,
-                 token_max_length=200,
-                 token_min_length=1,
-                 batch_type='static',
-                 batch_size=1,
-                 max_frames_in_batch=0,
-                 sort=True,
-                 raw_wav=True):
+    def __init__(
+        self,
+        data_file,
+        max_length=10240,
+        min_length=0,
+        token_max_length=200,
+        token_min_length=1,
+        batch_type="static",
+        batch_size=1,
+        max_frames_in_batch=0,
+        sort=True,
+        raw_wav=True,
+    ):
         """Dataset for loading audio data.
 
         Attributes::
@@ -420,25 +429,25 @@ class AudioDataset(Dataset):
                 if extracted featute(e.g. by kaldi) is used, only feature-level
                 augmentation such as specaug could be used.
         """
-        assert batch_type in ['static', 'dynamic']
+        assert batch_type in ["static", "dynamic"]
         data = []
 
         # Open in utf8 mode since meet encoding problem
-        with codecs.open(data_file, 'r', encoding='utf-8') as f:
+        with codecs.open(data_file, "r", encoding="utf-8") as f:
             for line in f:
-                arr = line.strip().split('\t')
+                arr = line.strip().split("\t")
                 if len(arr) != 7:
                     continue
-                key = arr[0].split(':')[1]
-                tokenid = arr[5].split(':')[1]
-                output_dim = int(arr[6].split(':')[1].split(',')[1])
+                key = arr[0].split(":")[1]
+                tokenid = arr[5].split(":")[1]
+                output_dim = int(arr[6].split(":")[1].split(",")[1])
                 if raw_wav:
-                    wav_path = ':'.join(arr[1].split(':')[1:])
-                    duration = int(float(arr[2].split(':')[1]) * 1000 / 10)
+                    wav_path = ":".join(arr[1].split(":")[1:])
+                    duration = int(float(arr[2].split(":")[1]) * 1000 / 10)
                     data.append((key, wav_path, duration, tokenid))
                 else:
-                    feat_ark = ':'.join(arr[1].split(':')[1:])
-                    feat_info = arr[2].split(':')[1].split(',')
+                    feat_ark = ":".join(arr[1].split(":")[1:])
+                    feat_info = arr[2].split(":")[1].split(",")
                     feat_dim = int(feat_info[1].strip())
                     num_frames = int(feat_info[0].strip())
                     data.append((key, feat_ark, num_frames, tokenid))
@@ -464,8 +473,8 @@ class AudioDataset(Dataset):
         self.minibatch = []
         num_data = len(data)
         # Dynamic batch size
-        if batch_type == 'dynamic':
-            assert (max_frames_in_batch > 0)
+        if batch_type == "dynamic":
+            assert max_frames_in_batch > 0
             self.minibatch.append([])
             num_frames_in_batch = 0
             for i in range(num_data):
@@ -493,32 +502,34 @@ class AudioDataset(Dataset):
         return self.minibatch[idx]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('type', help='config file')
-    parser.add_argument('config_file', help='config file')
-    parser.add_argument('data_file', help='input data file')
+    parser.add_argument("type", help="config file")
+    parser.add_argument("config_file", help="config file")
+    parser.add_argument("data_file", help="input data file")
     args = parser.parse_args()
 
-    with open(args.config_file, 'r') as fin:
+    with open(args.config_file, "r") as fin:
         configs = yaml.load(fin, Loader=yaml.FullLoader)
 
     # Init dataset and data loader
-    collate_conf = copy.copy(configs['collate_conf'])
-    if args.type == 'raw_wav':
+    collate_conf = copy.copy(configs["collate_conf"])
+    if args.type == "raw_wav":
         raw_wav = True
     else:
         raw_wav = False
     collate_func = CollateFunc(**collate_conf, raw_wav=raw_wav)
-    dataset_conf = configs.get('dataset_conf', {})
+    dataset_conf = configs.get("dataset_conf", {})
     dataset = AudioDataset(args.data_file, **dataset_conf, raw_wav=raw_wav)
 
-    data_loader = DataLoader(dataset,
-                             batch_size=1,
-                             shuffle=True,
-                             sampler=None,
-                             num_workers=0,
-                             collate_fn=collate_func)
+    data_loader = DataLoader(
+        dataset,
+        batch_size=1,
+        shuffle=True,
+        sampler=None,
+        num_workers=0,
+        collate_fn=collate_func,
+    )
 
     for i, batch in enumerate(data_loader):
         print(i)

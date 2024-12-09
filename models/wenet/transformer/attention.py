@@ -21,6 +21,7 @@ class MultiHeadedAttention(nn.Module):
         dropout_rate (float): Dropout rate.
 
     """
+
     def __init__(self, n_head: int, n_feat: int, dropout_rate: float):
         """Construct an MultiHeadedAttention object."""
         super().__init__()
@@ -63,8 +64,9 @@ class MultiHeadedAttention(nn.Module):
 
         return q, k, v
 
-    def forward_attention(self, value: torch.Tensor, scores: torch.Tensor,
-                          mask: Optional[torch.Tensor]) -> torch.Tensor:
+    def forward_attention(
+        self, value: torch.Tensor, scores: torch.Tensor, mask: Optional[torch.Tensor]
+    ) -> torch.Tensor:
         """Compute attention context vector.
 
         Args:
@@ -83,24 +85,29 @@ class MultiHeadedAttention(nn.Module):
         n_batch = value.size(0)
         if mask is not None:
             mask = mask.unsqueeze(1).eq(0)  # (batch, 1, *, time2)
-            scores = scores.masked_fill(mask, -float('inf'))
+            scores = scores.masked_fill(mask, -float("inf"))
             attn = torch.softmax(scores, dim=-1).masked_fill(
-                mask, 0.0)  # (batch, head, time1, time2)
+                mask, 0.0
+            )  # (batch, head, time1, time2)
         else:
             attn = torch.softmax(scores, dim=-1)  # (batch, head, time1, time2)
 
         p_attn = self.dropout(attn)
         x = torch.matmul(p_attn, value)  # (batch, head, time1, d_k)
-        x = (x.transpose(1, 2).contiguous().view(n_batch, -1,
-                                                 self.h * self.d_k)
-             )  # (batch, time1, d_model)
+        x = (
+            x.transpose(1, 2).contiguous().view(n_batch, -1, self.h * self.d_k)
+        )  # (batch, time1, d_model)
 
         return self.linear_out(x)  # (batch, time1, d_model)
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor,
-                value: torch.Tensor,
-                mask: Optional[torch.Tensor],
-                pos_emb: torch.Tensor = torch.empty(0),) -> torch.Tensor:
+    def forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        mask: Optional[torch.Tensor],
+        pos_emb: torch.Tensor = torch.empty(0),
+    ) -> torch.Tensor:
         """Compute scaled dot product attention.
 
         Args:
@@ -138,6 +145,7 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         n_feat (int): The number of features.
         dropout_rate (float): Dropout rate.
     """
+
     def __init__(self, n_head, n_feat, dropout_rate):
         """Construct an RelPositionMultiHeadedAttention object."""
         super().__init__(n_head, n_feat, dropout_rate)
@@ -160,14 +168,12 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
             torch.Tensor: Output tensor.
         """
 
-        zero_pad = torch.zeros((x.size()[0], x.size()[1], x.size()[2], 1),
-                               device=x.device,
-                               dtype=x.dtype)
+        zero_pad = torch.zeros(
+            (x.size()[0], x.size()[1], x.size()[2], 1), device=x.device, dtype=x.dtype
+        )
         x_padded = torch.cat([zero_pad, x], dim=-1)
 
-        x_padded = x_padded.view(x.size()[0],
-                                 x.size()[1],
-                                 x.size(3) + 1, x.size(2))
+        x_padded = x_padded.view(x.size()[0], x.size()[1], x.size(3) + 1, x.size(2))
         x = x_padded[:, :, 1:].view_as(x)
 
         if zero_triu:
@@ -176,9 +182,14 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
 
         return x
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor,
-                value: torch.Tensor, mask: Optional[torch.Tensor],
-                pos_emb: torch.Tensor):
+    def forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        mask: Optional[torch.Tensor],
+        pos_emb: torch.Tensor,
+    ):
         """Compute 'Scaled Dot Product Attention' with rel. positional encoding.
         Args:
             query (torch.Tensor): Query tensor (#batch, time1, size).
@@ -217,6 +228,7 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         # matrix_bd = self.rel_shift(matrix_bd)
 
         scores = (matrix_ac + matrix_bd) / math.sqrt(
-            self.d_k)  # (batch, head, time1, time2)
+            self.d_k
+        )  # (batch, head, time1, time2)
 
         return self.forward_attention(v, scores, mask)

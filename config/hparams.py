@@ -3,19 +3,19 @@ class Hparams:
         num_mels = 80
         ppg_dim = 351
         bn_dim = 256
-        num_freq = 1025  
-        min_mel_freq = 30.
-        max_mel_freq = 7600.
+        num_freq = 1025
+        min_mel_freq = 30.0
+        max_mel_freq = 7600.0
         sample_rate = 16000
         frame_length_ms = 25
         frame_shift_ms = 10
-        upper_f0 = 500.
-        lower_f0 = 30.
+        upper_f0 = 500.0
+        lower_f0 = 30.0
         n_mfcc = 13
         preemphasize = 0.97
         min_level_db = -80.0
         ref_level_db = 20.0
-        max_abs_value = 1.
+        max_abs_value = 1.0
         symmetric_specs = False
         griffin_lim_iters = 60
         power = 1.5
@@ -23,7 +23,7 @@ class Hparams:
 
     class SPEAKERS:
         num_spk = 3
-        spk_to_inds = ['bzn', 'mst-female', 'mst-male']
+        spk_to_inds = ["bzn", "mst-female", "mst-male"]
 
     class TrainToOne:
         dev_set_rate = 0.1

@@ -4,14 +4,17 @@ import math
 
 import torchaudio
 import torch
+
 torchaudio.set_audio_backend("sox")
 
 
 def db2amp(db):
     return pow(10, db / 20)
 
+
 def amp2db(amp):
     return 20 * math.log10(amp)
+
 
 def make_poly_distortion(conf):
     """Generate a db-domain ploynomial distortion function
@@ -25,9 +28,9 @@ def make_poly_distortion(conf):
         The ploynomial function, which could be applied on
         a float amplitude value
     """
-    a = conf['a']
-    m = conf['m']
-    n = conf['n']
+    a = conf["a"]
+    m = conf["m"]
+    n = conf["n"]
 
     def poly_distortion(x):
         abs_x = abs(x)
@@ -49,10 +52,13 @@ def make_poly_distortion(conf):
             else:
                 x = -amp
         return x
+
     return poly_distortion
 
+
 def make_quad_distortion():
-    return make_poly_distortion({'a' : 1, 'm' : 1, 'n' : 1})
+    return make_poly_distortion({"a": 1, "m": 1, "n": 1})
+
 
 # the amplitude are set to max for all non-zero point
 def make_max_distortion(conf):
@@ -66,7 +72,7 @@ def make_max_distortion(conf):
         The max function, which could be applied on
         a float amplitude value
     """
-    max_db = conf['max_db']
+    max_db = conf["max_db"]
     if max_db:
         max_amp = db2amp(max_db)  # < 0.997
     else:
@@ -80,8 +86,8 @@ def make_max_distortion(conf):
         else:
             x = 0.0
         return x
-    return max_distortion
 
+    return max_distortion
 
 
 def make_amp_mask(db_mask=None):
@@ -97,6 +103,7 @@ def make_amp_mask(db_mask=None):
         db_mask = [(-110, -95), (-90, -80), (-65, -60), (-50, -30), (-15, 0)]
     amp_mask = [(db2amp(db[0]), db2amp(db[1])) for db in db_mask]
     return amp_mask
+
 
 default_mask = make_amp_mask()
 
@@ -141,10 +148,10 @@ def make_fence_distortion(conf):
         The fence function, which could be applied on
         a float amplitude value
     """
-    mask_number = conf['mask_number']
-    max_db = conf['max_db']
+    mask_number = conf["mask_number"]
+    max_db = conf["max_db"]
     max_amp = db2amp(max_db)  # 0.997
-    if mask_number <= 0 :
+    if mask_number <= 0:
         positive_mask = default_mask
         negative_mask = make_amp_mask([(-50, 0)])
     else:
@@ -172,6 +179,7 @@ def make_fence_distortion(conf):
 
     return fence_distortion
 
+
 #
 def make_jag_distortion(conf):
     """Generate a jag distortion function
@@ -188,8 +196,8 @@ def make_jag_distortion(conf):
         The jag function,which could be applied on
         a float amplitude value
     """
-    mask_number = conf['mask_number']
-    if mask_number <= 0 :
+    mask_number = conf["mask_number"]
+    if mask_number <= 0:
         positive_mask = default_mask
         negative_mask = make_amp_mask([(-50, 0)])
     else:
@@ -217,6 +225,7 @@ def make_jag_distortion(conf):
 
     return jag_distortion
 
+
 # gaining 20db means amp = amp * 10
 # gaining -20db means amp = amp / 10
 def make_gain_db(conf):
@@ -230,7 +239,7 @@ def make_gain_db(conf):
         The db gain function, which could be applied on
         a float amplitude value
     """
-    db = conf['db']
+    db = conf["db"]
 
     def gain_db(x):
         return min(0.997, x * pow(10, db / 20))
@@ -255,6 +264,7 @@ def distort(x, func, rate=0.8):
             x[0][i] = func(float(x[0][i]))
     return x
 
+
 def distort_chain(x, funcs, rate=0.8):
     for i in range(0, x.shape[1]):
         a = random.uniform(0, 1)
@@ -263,31 +273,33 @@ def distort_chain(x, funcs, rate=0.8):
                 x[0][i] = func(float(x[0][i]))
     return x
 
+
 # x is numpy
 def distort_wav_conf(x, distort_type, distort_conf, rate=0.1):
-    if distort_type == 'gain_db':
+    if distort_type == "gain_db":
         gain_db = make_gain_db(distort_conf)
         x = distort(x, gain_db)
-    elif distort_type == 'max_distortion':
+    elif distort_type == "max_distortion":
         max_distortion = make_max_distortion(distort_conf)
         x = distort(x, max_distortion, rate=rate)
-    elif distort_type == 'fence_distortion':
+    elif distort_type == "fence_distortion":
         fence_distortion = make_fence_distortion(distort_conf)
         x = distort(x, fence_distortion, rate=rate)
-    elif distort_type == 'jag_distortion':
+    elif distort_type == "jag_distortion":
         jag_distortion = make_jag_distortion(distort_conf)
         x = distort(x, jag_distortion, rate=rate)
-    elif distort_type == 'poly_distortion':
+    elif distort_type == "poly_distortion":
         poly_distortion = make_poly_distortion(distort_conf)
         x = distort(x, poly_distortion, rate=rate)
-    elif distort_type == 'quad_distortion':
+    elif distort_type == "quad_distortion":
         quad_distortion = make_quad_distortion()
         x = distort(x, quad_distortion, rate=rate)
-    elif distort_type == 'none_distortion':
+    elif distort_type == "none_distortion":
         pass
     else:
-        print('unsupport type')
+        print("unsupport type")
     return x
+
 
 def distort_wav_conf_and_save(distort_type, distort_conf, rate, wav_in, wav_out):
     x, sr = torchaudio.load(wav_in)
@@ -295,16 +307,17 @@ def distort_wav_conf_and_save(distort_type, distort_conf, rate, wav_in, wav_out)
     out = distort_wav_conf(x, distort_type, distort_conf, rate)
     torchaudio.save(wav_out, torch.from_numpy(out), sr)
 
+
 if __name__ == "__main__":
     distort_type = sys.argv[1]
     wav_in = sys.argv[2]
     wav_out = sys.argv[3]
     conf = None
     rate = 0.1
-    if distort_type == 'new_jag_distortion':
-        conf = {'mask_number' : 4}
-    elif distort_type == 'new_fence_distortion':
-        conf = {'mask_number' : 1, 'max_db' : -30}
-    elif distort_type == 'poly_distortion':
-        conf = {'a' : 4, 'm' : 2, "n" : 2}
+    if distort_type == "new_jag_distortion":
+        conf = {"mask_number": 4}
+    elif distort_type == "new_fence_distortion":
+        conf = {"mask_number": 1, "max_db": -30}
+    elif distort_type == "poly_distortion":
+        conf = {"a": 4, "m": 2, "n": 2}
     distort_wav_conf_and_save(distort_type, conf, rate, wav_in, wav_out)
