@@ -72,8 +72,17 @@ If you have GPU (one typical GPU is enough, nearly 1s/batch):
 CUDA_VISIBLE_DEVICES=0 python train_to_one.py \
 --model_dir ../../exps/model_dir_to_bzn \
 --test_dir ../../exps/test_dir_to_bzn \
---data_di ../../dataset/prepared_data/bzn \
+--data_dir ../../dataset/prepared_data/bzn \
 > train_to_one.output 2>&1
+
+# For resnet 
+# suppose you are in code/dpss-exp3-VC-BNF
+git checkout resnet
+CUDA_VISIBLE_DEVICES=0 python train_to_one_resnet.py \
+--model_dir ../../exps/model_dir_to_bzn_resnet \
+--test_dir ../../exps/test_dir_to_bzn_resnet \
+--data_dir ../../dataset/prepared_data/bzn \
+> train_to_one_resnet.output 2>&1
 
 ```
 
